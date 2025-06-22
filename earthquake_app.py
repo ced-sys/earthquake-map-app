@@ -62,6 +62,8 @@ def generate_map(df):
 
     return m
 #Render the map unconditionally wit loading UI
+st.success(f"Showing {len(df_month)} earthquakes from {now.strftime('%B %Y')}")
+
 with st.spinner("Generating map...please wait"):
     progress=st.progress(0)
     for i in range(1, 6):
