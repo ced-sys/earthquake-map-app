@@ -60,4 +60,15 @@ def generate_map(df):
         ).add_to(marker_cluster)
 
     return m
+#Render the map unconditionally wit loading UI
+with st.spinner("Generating map...please wait"):
+    progress=st.progress(0)
+    for i in range(1, 6):
+        time.sleep(0.1)
+        progress.progress(i*20)
+    m=generate_map(df_month)
+    progress.empty()
+
+st_folium(m, width=1000, height=600)
+
 
