@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 import requests
-import time
-from datetime import datetime, timezone
+from datetime import datetime
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
@@ -24,54 +23,30 @@ def scrape_earthquake_data():
 
 df = scrape_earthquake_data()
 
-# Filter for this month
-now = datetime.now(timezone.utc)
-df_month = df[
-    (df['time'].dt.month == now.month) & 
-    (df['time'].dt.year == now.year)
-]
+# Filter earthquakes for the current month and year
+now = datetime.utcnow()
+df_month = df[(df['time'].dt.month == now.month) & (df['time'].dt.year == now.year)]
 
-# Keep only necessary columns
-df_month = df_month[['latitude', 'longitude', 'mag', 'place', 'time']]
+if df_month.empty:
+    st.warning("No earthquake data available for this month yet.")
+else:
+    st.success(f"Showing {len(df_month)} earthquakes from {now.strftime('%B %Y')}")
 
-# Optional: filter to show only relevant events (e.g., mag ≥ 3) and limit to 300 for performance
-df_month = df_month[df_month['mag'] >= 3.0]
-df_month = df_month.head(300)
-
-def generate_map(df):
-    if df.empty:
-        return None
-
-    m = folium.Map(location=[df['latitude'].mean(), df['longitude'].mean()], zoom_start=2)
+    m = folium.Map(location=[df_month['latitude'].mean(), df_month['longitude'].mean()], zoom_start=2)
     marker_cluster = MarkerCluster().add_to(m)
 
-    for _, row in df.iterrows():
-        popup = (
+    for _, row in df_month.iterrows():
+        popup_info = (
             f"<b>Magnitude:</b> {row['mag']}<br>"
             f"<b>Location:</b> {row['place']}<br>"
             f"<b>Time:</b> {row['time'].strftime('%Y-%m-%d %H:%M:%S')}"
         )
-        folium.CircleMarker(
+        folium.Marker(
             location=[row['latitude'], row['longitude']],
-            radius=4,
-            color='red' if row['mag'] >= 5 else 'blue',
-            fill=True,
-            fill_opacity=0.6,
-            popup=popup
+            popup=popup_info,
+            icon=folium.Icon(color='red' if row['mag'] >= 5 else 'blue', icon='info-sign')
         ).add_to(marker_cluster)
 
-    return m
-#Render the map unconditionally wit loading UI
-st.success(f"Showing {len(df_month)} earthquakes from {now.strftime('%B %Y')}")
-
-with st.spinner("Generating map...please wait"):
-    progress=st.progress(0)
-    for i in range(1, 6):
-        time.sleep(0.1)
-        progress.progress(i*20)
-    m=generate_map(df_month)
-    progress.empty()
-
-st_folium(m, width=1000, height=600)
+    st_folium(m, width=1000, height=600)
 
 
