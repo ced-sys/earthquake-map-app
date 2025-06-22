@@ -1,13 +1,15 @@
 import streamlit as st
 import pandas as pd
+import time
 import requests
 from datetime import datetime
 import folium
+from datetime import datetime, timezone
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
 st.set_page_config(layout="wide")
-st.title("🌍 Earthquakes This Month")
+st.title("Earthquakes This Month")
 
 @st.cache_data(ttl=3600)
 def scrape_earthquake_data():
@@ -24,7 +26,7 @@ def scrape_earthquake_data():
 df = scrape_earthquake_data()
 
 # Filter earthquakes for the current month and year
-now = datetime.utcnow()
+now = datetime.now(timezone.utc)
 df_month = df[(df['time'].dt.month == now.month) & (df['time'].dt.year == now.year)]
 
 if df_month.empty:
