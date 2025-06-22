@@ -23,24 +23,20 @@ def scrape_earthquake_data():
 
 df = scrape_earthquake_data()
 
-# Filter earthquakes for the current month
+# Filter for this month
 now = datetime.now(timezone.utc)
 df_month = df[
     (df['time'].dt.month == now.month) & 
     (df['time'].dt.year == now.year)
 ]
 
-# Select relevant columns only
+# Keep only necessary columns
 df_month = df_month[['latitude', 'longitude', 'mag', 'place', 'time']]
 
-# Optional filtering
-min_magnitude = st.slider("Minimum magnitude to display", 0.0, 10.0, 3.0, 0.1)
-max_points = st.slider("Maximum number of earthquakes to display", 50, 1000, 300)
+# Optional: filter to show only relevant events (e.g., mag ≥ 3) and limit to 300 for performance
+df_month = df_month[df_month['mag'] >= 3.0]
+df_month = df_month.head(300)
 
-df_month = df_month[df_month['mag'] >= min_magnitude]
-df_month = df_month.head(max_points)
-
-@st.cache_resource(ttl=3600)
 def generate_map(df):
     if df.empty:
         return None
