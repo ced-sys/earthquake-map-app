@@ -7,43 +7,61 @@ from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
 
 st.set_page_config(layout="wide")
-st.title("Earthquakes this Month")
+st.title("🌍 Earthquakes This Month")
 
 @st.cache_data(ttl=3600)
 def scrape_earthquake_data():
-    url='https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv'
-    response=requests.get(url)
-    if response.status_code==200:
-        df=pd.read_csv(url)
-        df['time']=pd.to_datetime(df['time'])
+    url = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv'
+    response = requests.get(url)
+    if response.status_code == 200:
+        df = pd.read_csv(url)
+        df['time'] = pd.to_datetime(df['time'])
         return df
     else:
         st.error("Failed to fetch earthquake data.")
         return pd.DataFrame()
 
-df=scrape_earthquake_data()
+df = scrape_earthquake_data()
 
-now=datetime.now(timezone.utc)
-df_month=df[(df['time'].dt.month==now.month) & (df['time'].dt.year==now.year)]
+# Filter earthquakes for the current month
+now = datetime.now(timezone.utc)
+df_month = df[
+    (df['time'].dt.month == now.month) & 
+    (df['time'].dt.year == now.year)
+]
 
-if df_month.empty:
-    st.warning("No Earthquake data available for this month yet")
-else:
-    st.success(f"Showing {len(df_month)} earthquakes from {now.strftime('%B %Y')}")
+# Select relevant columns only
+df_month = df_month[['latitude', 'longitude', 'mag', 'place', 'time']]
 
-    m=folium.Map(location=[df_month['latitude'].mean(), df_month['longitude'].mean()], zoom_start=2)
-    marker_cluster=MarkerCluster().add_to(m)
+# Optional filtering
+min_magnitude = st.slider("Minimum magnitude to display", 0.0, 10.0, 3.0, 0.1)
+max_points = st.slider("Maximum number of earthquakes to display", 50, 1000, 300)
 
-    for _, row in df_month.iterrows():
-        popup_info=(
-                f"<b>Magnitude:</b> {row['mag']}<br>"
-                f"<b>Location:</b> {row['place']}<br>"
-                f"<b>Time:</b> {row['time'].strftime('%Y-%m-%d %H:%M:%S')}"
-                )
-        folium.Marker(
-                location=[row['latitude'], row['longitude']], 
-                popup=popup_info,
-                icon=folium.Icon(color='red' if row['mag'] >= 5 else 'blue')
+df_month = df_month[df_month['mag'] >= min_magnitude]
+df_month = df_month.head(max_points)
+
+@st.cache_resource(ttl=3600)
+def generate_map(df):
+    if df.empty:
+        return None
+
+    m = folium.Map(location=[df['latitude'].mean(), df['longitude'].mean()], zoom_start=2)
+    marker_cluster = MarkerCluster().add_to(m)
+
+    for _, row in df.iterrows():
+        popup = (
+            f"<b>Magnitude:</b> {row['mag']}<br>"
+            f"<b>Location:</b> {row['place']}<br>"
+            f"<b>Time:</b> {row['time'].strftime('%Y-%m-%d %H:%M:%S')}"
+        )
+        folium.CircleMarker(
+            location=[row['latitude'], row['longitude']],
+            radius=4,
+            color='red' if row['mag'] >= 5 else 'blue',
+            fill=True,
+            fill_opacity=0.6,
+            popup=popup
         ).add_to(marker_cluster)
 
-    st_folium(m, width=1000, height=600)
+    return m
+
