@@ -94,25 +94,8 @@ def build_map(data, map_type="cluster"):
                 )
             ).add_to(m)
     
-    # Add legend
-    legend_html = '''
-    <div style="position: fixed; 
-                bottom: 50px; left: 50px; width: 200px; height: 120px; 
-                background-color: white; border:2px solid grey; z-index:9999; 
-                font-size:14px; padding: 10px">
-    <p><b>Magnitude Scale</b></p>
-    <p><i class="fa fa-circle" style="color:darkred"></i> ≥ 7.0 Major</p>
-    <p><i class="fa fa-circle" style="color:red"></i> 6.0-6.9 Strong</p>
-    <p><i class="fa fa-circle" style="color:orange"></i> 5.0-5.9 Moderate</p>
-    <p><i class="fa fa-circle" style="color:yellow"></i> 4.0-4.9 Light</p>
-    <p><i class="fa fa-circle" style="color:green"></i> 3.0-3.9 Minor</p>
-    <p><i class="fa fa-circle" style="color:lightblue"></i> < 3.0 Micro</p>
-    </div>
-    '''
-    m.get_root().html.add_child(folium.Element(legend_html))
-    
     return m
-
+    
 def create_magnitude_histogram(data):
     """Create histogram of earthquake magnitudes"""
     fig = px.histogram(
